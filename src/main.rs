@@ -1,81 +1,46 @@
-use anyhow::Result;
-use btleplug::api::bleuuid::BleUuid;
-use btleplug::api::{Central, CentralEvent, Manager as _, ScanFilter};
-use btleplug::platform::Manager;
-use uom::si::temperature_interval::degree_celsius;
+use std::io;
 
-use crate::fsm::App;
-use crate::mug::Mug;
+use ratatui::{backend::CrosstermBackend, Terminal};
 
-mod fsm;
-mod mug;
+use crate::{
+    app::{App, AppResult},
+    event::{Event, EventHandler},
+    handler::handle_key_events,
+    tui::Tui,
+};
+
+pub mod app;
+pub mod event;
+pub mod handler;
+pub mod tui;
+pub mod ui;
 
 #[tokio::main]
-async fn main() -> Result<()> {
-    println!("new manager");
-    let manager = Manager::new().await?;
+async fn main() -> AppResult<()> {
+    // Create an application.
+    let mut app = App::new();
 
-    println!("get adapters");
-    // get the first bluetooth adapter
-    let adapters = manager.adapters().await?;
-    let central = adapters.first().unwrap();
+    // Initialize the terminal user interface.
+    let backend = CrosstermBackend::new(io::stdout());
+    let terminal = Terminal::new(backend)?;
+    let events = EventHandler::new(250);
+    let mut tui = Tui::new(terminal, events);
+    tui.init()?;
 
-    let mut fsm = App::Scanning { central };
-    loop {
-        fsm = fsm.tick().await?;
+    // Start the main loop.
+    while app.running {
+        // Render the user interface.
+        tui.draw(&mut app)?;
+        // Handle events.
+        match tui.events.next().await? {
+            Event::Tick => app.tick(),
+            Event::Key(key_event) => handle_key_events(key_event, &mut app)?,
+            Event::Mouse(_) => {}
+            Event::Resize(_, _) => {}
+        }
     }
 
-    //     // Each adapter has an event stream, we fetch via events(),
-    //     // simplifying the type, this will return what is essentially a
-    //     // Future<Result<Stream<Item=CentralEvent>>>.
-    //     let mut events = central.events().await?;
-    //
-    //     println!("scan");
-    //     // start scanning for devices
-    //     central.start_scan(ScanFilter::default()).await?;
-    //
-    //     // Print based on whatever the event receiver outputs. Note that the event
-    //     // receiver blocks, so in a real program, this should be run in its own
-    //     // thread (not task, as this library does not yet use async channels).
-    //     while let Some(event) = events.next().await {
-    //         match event {
-    //             CentralEvent::DeviceDiscovered(id) => {
-    //                 println!("DeviceDiscovered: {:?}", id);
-    //             }
-    //             CentralEvent::DeviceConnected(id) => {
-    //                 println!("DeviceConnected: {:?}", id);
-    //             }
-    //             CentralEvent::DeviceDisconnected(id) => {
-    //                 println!("DeviceDisconnected: {:?}", id);
-    //             }
-    //             CentralEvent::ManufacturerDataAdvertisement {
-    //                 id,
-    //                 manufacturer_data,
-    //             } => {
-    //                 println!(
-    //                     "ManufacturerDataAdvertisement: {:?}, {:?}",
-    //                     id, manufacturer_data
-    //                 );
-    //             }
-    //             CentralEvent::ServiceDataAdvertisement { id, service_data } => {
-    //                 println!("ServiceDataAdvertisement: {:?}, {:?}", id, service_data);
-    //             }
-    //             CentralEvent::ServicesAdvertisement { id, services } => {
-    //                 let services: Vec<String> =
-    //                     services.into_iter().map(|s| s.to_short_string()).collect();
-    //                 println!("ServicesAdvertisement: {:?}, {:?}", id, services);
-    //             }
-    //             _ => {}
-    //         }
-    //     }
-    //
-    //     println!("get mug");
-    //     let mug = Mug::find_mug(central).await?;
-    //
-    //     println!("get temp");
-    //     let temp = mug.get_current_temp().await?;
-    //
-    //     println!("temp: {:?}", temp.get::<degree_celsius>());
-    //
-    //
+    // Exit the user interface.
+    tui.exit()?;
+    Ok(())
 }
