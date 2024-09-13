@@ -1,9 +1,7 @@
-use ratatui::{
-    layout::Alignment,
-    style::{Color, Style},
-    widgets::{Block, BorderType, Paragraph},
-    Frame,
-};
+use ratatui::layout::Alignment;
+use ratatui::style::{Color, Style};
+use ratatui::widgets::{Block, BorderType, Paragraph};
+use ratatui::Frame;
 
 use crate::app::App;
 

@@ -1,13 +1,12 @@
 use std::io;
 
-use ratatui::{backend::CrosstermBackend, Terminal};
+use ratatui::backend::CrosstermBackend;
+use ratatui::Terminal;
 
-use crate::{
-    app::{App, AppResult},
-    event::{Event, EventHandler},
-    handler::handle_key_events,
-    tui::Tui,
-};
+use crate::app::{App, AppResult};
+use crate::event::{Event, EventHandler};
+use crate::handler::handle_key_events;
+use crate::tui::Tui;
 
 pub mod app;
 pub mod event;
