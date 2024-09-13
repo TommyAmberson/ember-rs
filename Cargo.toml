@@ -8,5 +8,6 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.88"
 btleplug = "0.11.5"
+futures = "0.3.30"
 tokio = { version = "1.40.0", features = ["full"] }
 uom = "0.36.0"

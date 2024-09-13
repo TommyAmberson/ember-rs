@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 
-use anyhow::{anyhow, Context, Result};
-use btleplug::api::{Central, Peripheral as _};
-use btleplug::platform::{Adapter, Peripheral};
+use anyhow::{anyhow, Result};
+use btleplug::api::Peripheral as _;
+use btleplug::platform::Peripheral;
 use uom::si::f32::TemperatureInterval;
 use uom::si::temperature_interval::degree_celsius;
 
@@ -17,28 +17,6 @@ impl Mug {
     const CURRENT_TEMP: &'static str = "fc540002-236c-4c94-8fa9-944a3e5353fa";
     const CURRENT_BAT: &'static str = "fc540007-236c-4c94-8fa9-944a3e5353fa";
 
-    pub async fn find_mug(central: &Adapter) -> Result<Self> {
-        let peripherals = central.peripherals().await?;
-        for device in peripherals {
-            println!("found device: {:?}", device.address());
-            let properties = device.properties().await?;
-            // println!("props: {properties:?}");
-            let local_name = &properties
-                .context("Failed to get properties from device")?
-                .local_name;
-            println!("name: {local_name:?}");
-            if local_name.iter().any(|name| name.contains("Ember")) {
-                println!("connecting");
-                device.connect().await?;
-                println!("discovering services");
-                device.discover_services().await?;
-                let mug = Mug { device };
-                mug.check_characteristics()?;
-                return Ok(mug);
-            }
-        }
-        Err(anyhow!("Failed to find ble device with name Ember"))
-    }
     pub async fn get_current_temp(&self) -> Result<TemperatureInterval> {
         let chars = self.device.characteristics();
         let cmd_char = chars
@@ -85,5 +63,19 @@ impl Mug {
                 expected_chars.difference(&chars),
             ))
         }
+    }
+
+    pub async fn connected(&self) -> bool {
+        self.device.is_connected().await.unwrap_or(false)
+    }
+}
+
+impl TryFrom<Peripheral> for Mug {
+    type Error = anyhow::Error;
+
+    fn try_from(device: Peripheral) -> std::result::Result<Self, Self::Error> {
+        let mug = Mug { device };
+        mug.check_characteristics()?;
+        Ok(mug)
     }
 }
