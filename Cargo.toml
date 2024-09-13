@@ -6,7 +6,10 @@ license = "MIT"
 edition = "2021"
 
 [dependencies]
+anyhow = "1.0.88"
+btleplug = "0.11.5"
 crossterm = { version = "0.28.1", features = ["event-stream"] }
 futures = "0.3.30"
 ratatui = "0.28.1"
-tokio = { version = "1.39.3", features = ["full"] }
+tokio = { version = "1.40.0", features = ["full"] }
+uom = "0.36.0"

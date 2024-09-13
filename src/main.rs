@@ -10,7 +10,9 @@ use crate::tui::Tui;
 
 pub mod app;
 pub mod event;
+pub mod fsm;
 pub mod handler;
+pub mod mug;
 pub mod tui;
 pub mod ui;
 
